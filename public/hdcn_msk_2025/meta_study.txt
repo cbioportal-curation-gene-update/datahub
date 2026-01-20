@@ -1,0 +1,4 @@
+type_of_cancer: hdcn
+cancer_study_identifier: hdcn_msk_2025
+name: Histiocytic and Dendritic Cell Neoplasms (MSK, 2025)
+description: Targeted sequencing of 639 histiocytosis patients and their matched normals via MSK-IMPACT.

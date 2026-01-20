@@ -1,0 +1,7 @@
+cancer_study_identifier: rectal_radiation_msk_2024
+type_of_cancer: read
+name: Colorectal Cancer Radiation (MSK, 2024)
+description: Whole exome and targeted sequencing of 48 Rectal Adenocarcinoma samples via MSK-IMPACT and their matched normals.
+reference_genome: hg19
+citation: Dana M et al. JAMA Netw Open 2025
+pmid: 40100215
