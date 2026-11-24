@@ -1,0 +1,62 @@
+name: Publish HGNC studies to S3
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-hgnc-master
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.repository == 'cbioportal-curation-gene-update/datahub' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    outputs:
+      batches: ${{ steps.inventory.outputs.batches }}
+      revision: ${{ steps.inventory.outputs.revision }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: master
+          sparse-checkout: .github
+      - uses: ./.github/actions/hgnc-publisher
+      - id: inventory
+        run: python .github/scripts/hgnc_studies.py plan
+
+  publish:
+    needs: plan
+    if: needs.plan.outputs.batches != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.batches) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.revision }}
+          sparse-checkout: .github
+      - uses: ./.github/actions/hgnc-publisher
+      - run: python .github/scripts/hgnc_studies.py publish
+        env:
+          STUDIES: ${{ toJSON(matrix.studies) }}
+
+  index:
+    needs: [plan, publish]
+    if: >-
+      always() && needs.plan.result == 'success' &&
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.revision }}
+          sparse-checkout: .github
+      - uses: ./.github/actions/hgnc-publisher
+      - run: python .github/scripts/hgnc_studies.py index
