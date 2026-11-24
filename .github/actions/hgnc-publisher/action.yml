@@ -11,4 +11,5 @@ runs:
     - uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::203403084713:role/userServiceRole-hgnc-study-publisher
+        role-duration-seconds: 21600
         aws-region: us-east-1
