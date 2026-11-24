@@ -1,5 +1,30 @@
 name: Configure HGNC study publisher
-description: Install the S3 client and assume the master-branch publishing role
+description: Install the S3 client and sign in with the Datahub SAML settings
+inputs:
+  saml_idp_provider:
+    description: Datahub SAML_IDP_PROVIDER setting
+    required: true
+  saml_mfa:
+    description: Datahub SAML_MFA setting
+    required: true
+  saml_url:
+    description: Datahub SAML_URL setting
+    required: true
+  saml_username:
+    description: Datahub SAML_USERNAME setting
+    required: true
+  saml_aws_urn:
+    description: Datahub SAML_AWS_URN setting
+    required: true
+  saml_session_duration:
+    description: Datahub SAML_SESSION_DURATION setting
+    required: true
+  saml_password:
+    description: Datahub SAML_PASSWORD setting
+    required: true
+  saml_role:
+    description: Datahub SAML_ROLE setting
+    required: true
 runs:
   using: composite
   steps:
@@ -8,8 +33,35 @@ runs:
         python-version: '3.12'
     - shell: bash
       run: python -m pip install --disable-pip-version-check boto3
-    - uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::203403084713:role/userServiceRole-hgnc-study-publisher
-        role-duration-seconds: 21600
-        aws-region: us-east-1
+    - name: Install saml2aws
+      shell: bash
+      run: |
+        cd "$RUNNER_TEMP"
+        curl -fsSL --retry 3 -o saml2aws.tar.gz https://github.com/Versent/saml2aws/releases/download/v2.36.18/saml2aws_2.36.18_linux_amd64.tar.gz
+        echo '57cb099cff2c9d8526a579a0c5668be76a481905199cf99df5976a96124bb17f  saml2aws.tar.gz' | sha256sum --check
+        tar -xzf saml2aws.tar.gz saml2aws
+    - name: Sign in to the public AWS account
+      shell: bash
+      env:
+        SAML_IDP_PROVIDER: ${{ inputs.saml_idp_provider }}
+        SAML_MFA: ${{ inputs.saml_mfa }}
+        SAML_URL: ${{ inputs.saml_url }}
+        SAML2AWS_USERNAME: ${{ inputs.saml_username }}
+        SAML_AWS_URN: ${{ inputs.saml_aws_urn }}
+        SAML_SESSION_DURATION: ${{ inputs.saml_session_duration }}
+        SAML2AWS_PASSWORD: ${{ inputs.saml_password }}
+        SAML2AWS_ROLE: ${{ inputs.saml_role }}
+      run: |
+        cd "$RUNNER_TEMP"
+        set -eu
+        for key in SAML_IDP_PROVIDER SAML_MFA SAML_URL SAML2AWS_USERNAME SAML_AWS_URN SAML_SESSION_DURATION SAML2AWS_PASSWORD SAML2AWS_ROLE; do
+          if [[ -z "${!key:-}" ]]; then
+            echo "::error::Missing Datahub SAML setting: $key"
+            exit 1
+          fi
+        done
+        ./saml2aws configure --idp-provider="$SAML_IDP_PROVIDER" --mfa="$SAML_MFA" \
+          --url="$SAML_URL" --username="$SAML2AWS_USERNAME" --aws-urn="$SAML_AWS_URN" \
+          --session-duration="$SAML_SESSION_DURATION" --skip-prompt --profile=default
+        ./saml2aws login --profile=default --force --skip-prompt
+        test "$(aws sts get-caller-identity --query Account --output text)" = 203403084713
