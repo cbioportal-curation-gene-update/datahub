@@ -6,7 +6,10 @@ on:
 
 permissions:
   contents: read
-  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  AWS_EC2_METADATA_DISABLED: "true"
 
 concurrency:
   group: publish-hgnc-master
@@ -25,6 +28,15 @@ jobs:
           ref: master
           sparse-checkout: .github
       - uses: ./.github/actions/hgnc-publisher
+        with:
+          saml_idp_provider: ${{ secrets.SAML_IDP_PROVIDER }}
+          saml_mfa: ${{ secrets.SAML_MFA }}
+          saml_url: ${{ secrets.SAML_URL }}
+          saml_username: ${{ secrets.SAML_USERNAME }}
+          saml_aws_urn: ${{ secrets.SAML_AWS_URN }}
+          saml_session_duration: ${{ secrets.SAML_SESSION_DURATION }}
+          saml_password: ${{ secrets.SAML_PASSWORD }}
+          saml_role: ${{ secrets.SAML_ROLE }}
       - id: inventory
         run: python .github/scripts/hgnc_studies.py plan
 
@@ -43,6 +55,15 @@ jobs:
           ref: ${{ needs.plan.outputs.revision }}
           sparse-checkout: .github
       - uses: ./.github/actions/hgnc-publisher
+        with:
+          saml_idp_provider: ${{ secrets.SAML_IDP_PROVIDER }}
+          saml_mfa: ${{ secrets.SAML_MFA }}
+          saml_url: ${{ secrets.SAML_URL }}
+          saml_username: ${{ secrets.SAML_USERNAME }}
+          saml_aws_urn: ${{ secrets.SAML_AWS_URN }}
+          saml_session_duration: ${{ secrets.SAML_SESSION_DURATION }}
+          saml_password: ${{ secrets.SAML_PASSWORD }}
+          saml_role: ${{ secrets.SAML_ROLE }}
       - run: python .github/scripts/hgnc_studies.py publish
         env:
           STUDIES: ${{ toJSON(matrix.studies) }}
@@ -59,4 +80,13 @@ jobs:
           ref: ${{ needs.plan.outputs.revision }}
           sparse-checkout: .github
       - uses: ./.github/actions/hgnc-publisher
+        with:
+          saml_idp_provider: ${{ secrets.SAML_IDP_PROVIDER }}
+          saml_mfa: ${{ secrets.SAML_MFA }}
+          saml_url: ${{ secrets.SAML_URL }}
+          saml_username: ${{ secrets.SAML_USERNAME }}
+          saml_aws_urn: ${{ secrets.SAML_AWS_URN }}
+          saml_session_duration: ${{ secrets.SAML_SESSION_DURATION }}
+          saml_password: ${{ secrets.SAML_PASSWORD }}
+          saml_role: ${{ secrets.SAML_ROLE }}
       - run: python .github/scripts/hgnc_studies.py index
