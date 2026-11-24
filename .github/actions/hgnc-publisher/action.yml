@@ -1,0 +1,14 @@
+name: Configure HGNC study publisher
+description: Install the S3 client and assume the master-branch publishing role
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - shell: bash
+      run: python -m pip install --disable-pip-version-check boto3
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::203403084713:role/userServiceRole-hgnc-study-publisher
+        aws-region: us-east-1
